@@ -2,6 +2,7 @@ from fastapi import FastAPI
 import psycopg2
 import os
 from dotenv import load_dotenv
+from fastapi.responses import FileResponse
 load_dotenv()
 app = FastAPI()
 
@@ -53,5 +54,7 @@ def get_products(category: str = None,cursor:str=None,limit:int=20):
         last_product = products_list[-1]
         next_cursor = f"{last_product['created_at']}_{last_product['id']}"  
     return {"products": products_list, "next_cursor": next_cursor}
-
+@app.get("/ui")
+def serve_ui():
+    return FileResponse("index.html")
 

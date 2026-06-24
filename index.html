@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VectorShelf — Inventory Browser</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12201B;
+    --surface: #1B2C25;
+    --surface-2: #223A30;
+    --line: #314A3D;
+    --cream: #ECE6D6;
+    --muted: #8FA89B;
+    --amber: #DDA63A;
+    --amber-soft: #DDA63A22;
+    --rust: #C1652F;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% -10%, #1F3329 0%, transparent 45%),
+      radial-gradient(circle at 100% 0%, #1A2C24 0%, transparent 40%);
+    color: var(--cream);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+  .wrap{ max-width: 1180px; margin: 0 auto; padding: 36px 28px 80px; }
+
+  /* Header */
+  header{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    gap:24px; flex-wrap:wrap;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 22px; margin-bottom: 28px;
+  }
+  .brand-eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; letter-spacing: 0.18em; text-transform:uppercase;
+    color: var(--amber); margin: 0 0 8px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600; font-optical-sizing:auto;
+    font-size: 44px; line-height:1.02; margin:0;
+    letter-spacing: -0.01em;
+  }
+  .stock-count{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 13px; color: var(--muted);
+    text-align:right;
+  }
+  .stock-count strong{ color: var(--cream); font-size:15px; display:block; margin-bottom:2px; }
+
+  /* Controls */
+  .controls{
+    display:flex; gap:10px; flex-wrap:wrap; margin-bottom: 28px;
+  }
+  .pill{
+    font-family:'Inter', sans-serif;
+    font-size: 13.5px; font-weight:500;
+    padding: 9px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .pill:hover{ border-color: var(--amber); color: var(--cream); }
+  .pill.active{
+    background: var(--amber);
+    border-color: var(--amber);
+    color: #1B1505;
+    font-weight: 600;
+  }
+
+  /* Grid */
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 16px;
+  }
+  .card{
+    position:relative;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px 18px 18px;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .card:hover{ border-color: var(--amber); transform: translateY(-2px); }
+  .card::before{
+    content:"";
+    position:absolute; top:14px; left:14px;
+    width:8px; height:8px; border-radius:50%;
+    background: var(--bg);
+    border: 1px solid var(--line);
+  }
+  .card-id{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    margin: 0 0 14px; padding-left: 20px;
+    letter-spacing: 0.04em;
+  }
+  .card-name{
+    font-family:'Fraunces', serif;
+    font-weight: 600; font-size: 19px;
+    margin: 0 0 6px; line-height:1.25;
+  }
+  .card-category{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px; letter-spacing:0.06em; text-transform:uppercase;
+    color: var(--amber);
+    background: var(--amber-soft);
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-bottom: 14px;
+  }
+  .card-footer{
+    display:flex; justify-content:space-between; align-items:baseline;
+    border-top: 1px dashed var(--line);
+    padding-top: 12px; margin-top: 4px;
+  }
+  .card-price{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 17px; font-weight:500; color: var(--cream);
+  }
+  .card-price::before{ content:"₹"; color: var(--muted); margin-right:1px; }
+  .card-date{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px; color: var(--muted);
+  }
+
+  /* Load more */
+  .load-row{ display:flex; justify-content:center; margin-top: 36px; }
+  .load-more{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 13px; letter-spacing:0.06em; text-transform:uppercase;
+    padding: 13px 30px;
+    background: transparent;
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    border-radius: 6px;
+    cursor:pointer;
+    transition: all .15s ease;
+  }
+  .load-more:hover{ background: var(--amber); color:#1B1505; }
+  .load-more:disabled{
+    opacity:0.4; cursor:default; border-color: var(--line); color:var(--muted);
+  }
+  .end-note{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px; color: var(--muted); text-align:center; margin-top:36px;
+  }
+
+  /* Empty / loading */
+  .status-msg{
+    font-family:'IBM Plex Mono', monospace;
+    color: var(--muted); font-size: 13px;
+    padding: 60px 0; text-align:center;
+  }
+
+  @media (max-width: 560px){
+    h1{ font-size: 32px; }
+    header{ flex-direction:column; align-items:flex-start; }
+    .stock-count{ text-align:left; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <p class="brand-eyebrow">Stockroom Ledger</p>
+        <h1>VectorShelf</h1>
+      </div>
+      <div class="stock-count">
+        <strong id="loadedCount">0 items on screen</strong>
+        cursor-paginated · live from Postgres
+      </div>
+    </header>
+
+    <div class="controls" id="categoryPills">
+      <!-- filled by JS -->
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div id="statusArea"></div>
+    <div class="load-row" id="loadRow" style="display:none;">
+      <button class="load-more" id="loadMoreBtn">Load next batch →</button>
+    </div>
+  </div>
+
+<script>
+const API_BASE = ""; // same-origin, served by FastAPI itself
+const CATEGORIES = ["All", "Electronics", "Clothing", "Books", "Toys", "Home", "Sports", "Beauty", "Groceries"];
+
+let currentCategory = "All";
+let nextCursor = null;
+let totalLoaded = 0;
+
+const grid = document.getElementById("grid");
+const pillsEl = document.getElementById("categoryPills");
+const loadRow = document.getElementById("loadRow");
+const loadMoreBtn = document.getElementById("loadMoreBtn");
+const statusArea = document.getElementById("statusArea");
+const loadedCountEl = document.getElementById("loadedCount");
+
+function renderPills(){
+  pillsEl.innerHTML = "";
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement("button");
+    btn.className = "pill" + (cat === currentCategory ? " active" : "");
+    btn.textContent = cat;
+    btn.onclick = () => {
+      currentCategory = cat;
+      resetAndLoad();
+    };
+    pillsEl.appendChild(btn);
+  });
+}
+
+function formatDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { year:'numeric', month:'short', day:'numeric' });
+}
+
+function cardHTML(p){
+  return `
+    <div class="card">
+      <p class="card-id">REF-${String(p.id).padStart(6,"0")}</p>
+      <span class="card-category">${p.category}</span>
+      <h3 class="card-name">${p.name}</h3>
+      <div class="card-footer">
+        <span class="card-price">${p.price.toFixed(2)}</span>
+        <span class="card-date">${formatDate(p.created_at)}</span>
+      </div>
+    </div>
+  `;
+}
+
+async function fetchPage(){
+  let url = `${API_BASE}/products?limit=24`;
+  if (currentCategory !== "All") url += `&category=${encodeURIComponent(currentCategory)}`;
+  if (nextCursor) url += `&cursor=${encodeURIComponent(nextCursor)}`;
+
+  loadMoreBtn.disabled = true;
+  loadMoreBtn.textContent = "Loading…";
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Request failed: " + res.status);
+    const data = await res.json();
+
+    data.products.forEach(p => {
+      grid.insertAdjacentHTML("beforeend", cardHTML(p));
+    });
+
+    totalLoaded += data.products.length;
+    loadedCountEl.textContent = `${totalLoaded} item${totalLoaded === 1 ? "" : "s"} on screen`;
+    nextCursor = data.next_cursor;
+
+    if (nextCursor) {
+      loadRow.style.display = "flex";
+      loadMoreBtn.disabled = false;
+      loadMoreBtn.textContent = "Load next batch →";
+    } else {
+      loadRow.style.display = "none";
+      if (totalLoaded > 0) {
+        statusArea.innerHTML = `<p class="end-note">— end of catalog, ${totalLoaded} items shown —</p>`;
+      }
+    }
+
+    if (totalLoaded === 0) {
+      statusArea.innerHTML = `<p class="status-msg">No items found in this category.</p>`;
+    } else {
+      const existing = statusArea.querySelector('.status-msg');
+      if (existing) existing.remove();
+    }
+
+  } catch (err) {
+    statusArea.innerHTML = `<p class="status-msg">Couldn't reach the shelf. ${err.message}</p>`;
+    loadMoreBtn.disabled = false;
+    loadMoreBtn.textContent = "Retry →";
+  }
+}
+
+function resetAndLoad(){
+  grid.innerHTML = "";
+  statusArea.innerHTML = "";
+  nextCursor = null;
+  totalLoaded = 0;
+  loadedCountEl.textContent = "0 items on screen";
+  renderPills();
+  fetchPage();
+}
+
+loadMoreBtn.onclick = fetchPage;
+
+renderPills();
+fetchPage();
+</script>
+</body>
+</html>
